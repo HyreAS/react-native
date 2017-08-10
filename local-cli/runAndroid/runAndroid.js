@@ -18,15 +18,15 @@ const path = require('path');
 const Promise = require('promise');
 
 // Verifies this is an Android project
-function checkAndroid(root) {
-  return fs.existsSync(path.join(root, 'android/gradlew'));
+function checkAndroid(root, projectPath) {
+  return fs.existsSync(path.join(root, projectPath, 'gradlew'));
 }
 
 /**
  * Starts the app on a connected Android emulator or device.
  */
 function runAndroid(argv, config, args) {
-  if (!checkAndroid(args.root)) {
+  if (!checkAndroid(args.root, args.projectPath)) {
     console.log(chalk.red('Android project not found. Maybe run react-native android first?'));
     return;
   }
@@ -80,7 +80,7 @@ function tryRunAdbReverse(device) {
 
 // Builds the app and runs it on a connected emulator / device.
 function buildAndRun(args) {
-  process.chdir(path.join(args.root, 'android'));
+  process.chdir(path.join(args.root, args.projectPath));
   const cmd = process.platform.startsWith('win')
     ? 'gradlew.bat'
     : './gradlew';
@@ -139,7 +139,7 @@ function tryInstallAppOnDevice(args, device) {
     const adbPath = getAdbPath();
     const adbArgs = ['-s', device, 'install', pathToApk];
     console.log(chalk.bold(
-      `Installing the app on the device (cd android && adb -s ${device} install ${pathToApk}`
+      `Installing the app on the device (cd ${args.projectPath} && adb -s ${device} install ${pathToApk}`
     ));
     child_process.execFileSync(adbPath, adbArgs, {
       stdio: [process.stdin, process.stdout, process.stderr],
@@ -195,7 +195,7 @@ function runOnAllDevices(args, cmd, packageNameWithSuffix, packageName, adbPath)
     }
 
     console.log(chalk.bold(
-      `Building and installing the app on the device (cd android && ${cmd} ${gradleArgs.join(' ')})...`
+      `Building and installing the app on the device (cd ${args.projectPath} && ${cmd} ${gradleArgs.join(' ')})...`
     ));
 
     child_process.execFileSync(cmd, gradleArgs, {
@@ -283,6 +283,10 @@ module.exports = {
     command: '--root [string]',
     description: 'Override the root directory for the android build (which contains the android directory)',
     default: '',
+  }, {
+    command: '--project-path [string]',
+    description: 'Pass a non-standard location of the android directory.',
+    default: 'android',
   }, {
     command: '--flavor [string]',
     description: '--flavor has been deprecated. Use --variant instead',
